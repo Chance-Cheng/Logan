@@ -116,3 +116,7 @@ extern void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSStri
  @return @"2018-11-21"
  */
 extern NSString *_Nonnull loganTodaysDate(void);
+
+
+// 再次初始化
+extern void loganInitAgain(void);
