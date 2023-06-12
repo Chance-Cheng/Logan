@@ -58,6 +58,7 @@ uint32_t __max_reversed_date;
 - (void)flush;
 - (void)filePathForDate:(NSString *)date block:(LoganFilePathBlock)filePathBlock;
 + (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId resultBlock:(LoganUploadResultBlock)resultBlock;
+- (void)openCLibAgain;
 @end
 
 void loganInit(NSData *_Nonnull aes_key16, NSData *_Nonnull aes_iv16, uint64_t max_file) {
@@ -70,6 +71,10 @@ void loganInit(NSData *_Nonnull aes_key16, NSData *_Nonnull aes_iv16, uint64_t m
     
 }
 
+void loganInitAgain(void) {
+    
+    [[Logan logan] openCLibAgain];
+}
 void loganSetMaxReversedDate(int max_reversed_date) {
     if (max_reversed_date > 0) {
         __max_reversed_date = max_reversed_date;
@@ -148,6 +153,11 @@ NSString *_Nonnull loganTodaysDate(void) {
     clogan_open((char *)today.UTF8String);
     __AES_KEY = nil;
     __AES_IV = nil;
+}
+
+- (void)openCLibAgain {
+    NSString *today = [Logan currentDate];
+    clogan_open((char *)today.UTF8String);
 }
 
 - (void)writeLog:(NSString *)log logType:(NSUInteger)type {

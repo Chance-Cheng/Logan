@@ -117,6 +117,7 @@ extern void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSStri
  */
 extern NSString *_Nonnull loganTodaysDate(void);
 
-
-// 再次初始化
+/**
+ 文件超过阈值，重新建立映射
+ */
 extern void loganInitAgain(void);
