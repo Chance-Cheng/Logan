@@ -108,7 +108,7 @@ extern void loganUploadFilePath(NSString *_Nonnull date, LoganFilePathBlock _Non
  @param unionId 当前用户的唯一标识,用来区分日志来源用户
  @param resultBlock 服务器返回结果
  */
-extern void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSString * _Nullable appId, NSString *_Nullable unionId,NSString *_Nullable deviceId, LoganUploadResultBlock _Nullable resultBlock);
+extern void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSString * _Nullable appId, NSString *_Nullable unionId,NSString *_Nullable deviceId, BOOL isSync,LoganUploadResultBlock _Nullable resultBlock);
 
 /**
  返回今天日期
@@ -119,6 +119,5 @@ extern NSString *_Nonnull loganTodaysDate(void);
 
 /**
  文件超过阈值，重新建立映射
- 
  */
 extern void loganInitAgain(void);

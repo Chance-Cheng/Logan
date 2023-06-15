@@ -57,7 +57,7 @@ uint32_t __max_reversed_date;
 + (NSString *)currentDate;
 - (void)flush;
 - (void)filePathForDate:(NSString *)date block:(LoganFilePathBlock)filePathBlock;
-+ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId resultBlock:(LoganUploadResultBlock)resultBlock;
++ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId isSync:(BOOL)isSync resultBlock:(LoganUploadResultBlock)resultBlock;
 - (void)openCLibAgain;
 @end
 
@@ -105,8 +105,8 @@ void loganUploadFilePath(NSString *_Nonnull date, LoganFilePathBlock _Nonnull fi
     [[Logan logan] filePathForDate:date block:filePathBlock];
 }
 
-void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSString * _Nullable appId, NSString *_Nullable unionId,NSString *_Nullable deviceId, LoganUploadResultBlock _Nullable resultBlock){
-	[Logan uploadFileToServer:url date:date appId:appId unionId:unionId deviceId:deviceId resultBlock:resultBlock];
+void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSString * _Nullable appId, NSString *_Nullable unionId,NSString *_Nullable deviceId, BOOL isSync, LoganUploadResultBlock _Nullable resultBlock){
+    [Logan uploadFileToServer:url date:date appId:appId unionId:unionId deviceId:deviceId isSync:isSync  resultBlock:resultBlock];
 }
 
 void loganFlush(void) {
@@ -401,49 +401,57 @@ NSString *_Nonnull loganTodaysDate(void) {
 
 #pragma mark - file
 
-+ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId resultBlock:(LoganUploadResultBlock)resultBlock {
-	loganUploadFilePath(date, ^(NSString *_Nullable filePatch) {
-		if (filePatch == nil) {
-			if(resultBlock){
-				dispatch_async(dispatch_get_main_queue(), ^{
-					NSError * error = [NSError errorWithDomain:@"come.meituan.logan.error" code:-100 userInfo:@{@"info" : [NSString stringWithFormat:@"can't find file of %@",date]}];
-					resultBlock(nil,nil,error);
-				});
-			}
-			return;
-		}
-		NSURL *url = [NSURL URLWithString:urlStr];
-		NSMutableURLRequest *req = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
-		[req setHTTPMethod:@"POST"];
-		[req addValue:@"binary/octet-stream" forHTTPHeaderField:@"Content-Type"];
-		if(appId.length >0){
-			[req addValue:appId forHTTPHeaderField:@"appId"];
-		}
-		if(unionId.length >0){
-			[req addValue:unionId forHTTPHeaderField:@"unionId"];
-		}
-		NSString *bundleVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
-		if (bundleVersion.length > 0) {
-			[req addValue:bundleVersion forHTTPHeaderField:@"bundleVersion"];
-		}
-		
-		if(deviceId.length >0){
-			[req addValue:deviceId forHTTPHeaderField:@"deviceId"];
-		}
-		[req addValue:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] forHTTPHeaderField:@"appVersion"];
-		[req addValue:@"2" forHTTPHeaderField:@"platform"];
-		[req addValue:date forHTTPHeaderField:@"fileDate"];
-		
-		NSURL *fileUrl = [NSURL fileURLWithPath:filePatch];
-		NSURLSessionUploadTask *task = [[NSURLSession sharedSession] uploadTaskWithRequest:req fromFile:fileUrl completionHandler:^(NSData *_Nullable data, NSURLResponse *_Nullable response, NSError *_Nullable error) {
-			if(resultBlock){
-				dispatch_async(dispatch_get_main_queue(), ^{
-					resultBlock(data,response,error);
-				});
-			}
-		}];
-		[task resume];
-	});
++ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId isSync:(BOOL)isSync resultBlock:(LoganUploadResultBlock)resultBlock {
+    loganUploadFilePath(date, ^(NSString *_Nullable filePatch) {
+        if (filePatch == nil) {
+            if(resultBlock){
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSError * error = [NSError errorWithDomain:@"come.meituan.logan.error" code:-100 userInfo:@{@"info" : [NSString stringWithFormat:@"can't find file of %@",date]}];
+                    resultBlock(nil,nil,error);
+                });
+            }
+            return;
+        }
+        NSURL *url = [NSURL URLWithString:urlStr];
+        NSMutableURLRequest *req = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
+        [req setHTTPMethod:@"POST"];
+        [req addValue:@"binary/octet-stream" forHTTPHeaderField:@"Content-Type"];
+        if(appId.length >0){
+            [req addValue:appId forHTTPHeaderField:@"appId"];
+        }
+        if(unionId.length >0){
+            [req addValue:unionId forHTTPHeaderField:@"unionId"];
+        }
+        NSString *bundleVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+        if (bundleVersion.length > 0) {
+            [req addValue:bundleVersion forHTTPHeaderField:@"bundleVersion"];
+        }
+        
+        if(deviceId.length >0){
+            [req addValue:deviceId forHTTPHeaderField:@"deviceId"];
+        }
+        [req addValue:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] forHTTPHeaderField:@"appVersion"];
+        [req addValue:@"2" forHTTPHeaderField:@"platform"];
+        NSString *currentDateString = date;
+        // fileDate分为精确到天和精确到秒 两种格式
+        if (isSync) {
+            NSDate *currentDate = [NSDate date];
+            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+            [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+            currentDateString = [dateFormatter stringFromDate:currentDate];
+        }
+        [req addValue:currentDateString forHTTPHeaderField:@"fileDate"];
+        
+        NSURL *fileUrl = [NSURL fileURLWithPath:filePatch];
+        NSURLSessionUploadTask *task = [[NSURLSession sharedSession] uploadTaskWithRequest:req fromFile:fileUrl completionHandler:^(NSData *_Nullable data, NSURLResponse *_Nullable response, NSError *_Nullable error) {
+            if(resultBlock){
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    resultBlock(data,response,error);
+                });
+            }
+        }];
+        [task resume];
+    });
 }
 
 + (void)deleteOutdatedFiles {
