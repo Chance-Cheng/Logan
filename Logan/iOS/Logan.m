@@ -57,7 +57,7 @@ uint32_t __max_reversed_date;
 + (NSString *)currentDate;
 - (void)flush;
 - (void)filePathForDate:(NSString *)date block:(LoganFilePathBlock)filePathBlock;
-+ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId isSync:(BOOL)isSync resultBlock:(LoganUploadResultBlock)resultBlock;
++ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId isSync:(BOOL)isSync mode:(NSString *)mode resultBlock:(LoganUploadResultBlock)resultBlock;
 - (void)openCLibAgain;
 @end
 
@@ -105,8 +105,8 @@ void loganUploadFilePath(NSString *_Nonnull date, LoganFilePathBlock _Nonnull fi
     [[Logan logan] filePathForDate:date block:filePathBlock];
 }
 
-void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSString * _Nullable appId, NSString *_Nullable unionId,NSString *_Nullable deviceId, BOOL isSync, LoganUploadResultBlock _Nullable resultBlock){
-    [Logan uploadFileToServer:url date:date appId:appId unionId:unionId deviceId:deviceId isSync:isSync  resultBlock:resultBlock];
+void loganUpload(NSString * _Nonnull url, NSString * _Nonnull date,NSString * _Nullable appId, NSString *_Nullable unionId,NSString *_Nullable deviceId, BOOL isSync,NSString * _Nonnull mode, LoganUploadResultBlock _Nullable resultBlock){
+    [Logan uploadFileToServer:url date:date appId:appId unionId:unionId deviceId:deviceId isSync:isSync mode:mode resultBlock:resultBlock];
 }
 
 void loganFlush(void) {
@@ -401,7 +401,7 @@ NSString *_Nonnull loganTodaysDate(void) {
 
 #pragma mark - file
 
-+ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId isSync:(BOOL)isSync resultBlock:(LoganUploadResultBlock)resultBlock {
++ (void)uploadFileToServer:(NSString *)urlStr date:(NSString *)date appId:(NSString *)appId unionId:(NSString *)unionId deviceId:(NSString *)deviceId isSync:(BOOL)isSync mode:(NSString *)mode resultBlock:(LoganUploadResultBlock)resultBlock {
     loganUploadFilePath(date, ^(NSString *_Nullable filePatch) {
         if (filePatch == nil) {
             if(resultBlock){
@@ -430,7 +430,11 @@ NSString *_Nonnull loganTodaysDate(void) {
         if(deviceId.length >0){
             [req addValue:deviceId forHTTPHeaderField:@"deviceId"];
         }
-        [req addValue:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] forHTTPHeaderField:@"appVersion"];
+        NSString *versionTxt = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+        if ([mode length]) {
+            versionTxt = [NSString stringWithFormat:@"%@-%@",[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],mode];
+        }
+        [req addValue:versionTxt forHTTPHeaderField:@"appVersion"];
         [req addValue:@"2" forHTTPHeaderField:@"platform"];
         NSString *currentDateString = date;
         // fileDate分为精确到天和精确到秒 两种格式
