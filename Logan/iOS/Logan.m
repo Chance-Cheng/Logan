@@ -416,9 +416,9 @@ NSString *_Nonnull loganTodaysDate(void) {
         NSMutableURLRequest *req = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
         [req setHTTPMethod:@"POST"];
         [req addValue:@"binary/octet-stream" forHTTPHeaderField:@"Content-Type"];
-        if(appId.length >0){
-            [req addValue:appId forHTTPHeaderField:@"appId"];
-        }
+//        if(appId.length >0){
+            [req addValue:@"lenovo-app-ios" forHTTPHeaderField:@"appId"];
+//        }
         if(unionId.length >0){
             [req addValue:unionId forHTTPHeaderField:@"unionId"];
         }
